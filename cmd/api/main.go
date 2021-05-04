@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"flag"
 	"fmt"
 	"log"
@@ -11,6 +12,8 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	_ "github.com/lib/pq"
 )
 
 const (
@@ -21,6 +24,9 @@ const (
 type config struct {
 	port int
 	env  string
+	db   struct {
+		dsn string
+	}
 }
 
 type application struct {
@@ -35,7 +41,20 @@ func main() {
 	flag.StringVar(&cfg.env, "env", "dev", "Running environment")
 	flag.Parse()
 
+	pgUser := os.Getenv("POSTGRES_USER")
+	pgPWD := os.Getenv("POSTGRES_PWD")
+	pgDB := os.Getenv("POSTGRES_DB")
+	cfg.db.dsn = fmt.Sprintf("postgres://%s:%s@localhost/%s?sslmode=disable", pgUser, pgPWD, pgDB)
+
 	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime)
+
+	db, err := openDB(cfg.db.dsn)
+	if err != nil {
+		logger.Fatalf("unable to connect to database: %s\n", err)
+	}
+	defer db.Close()
+
+	logger.Printf("database connection established")
 
 	app := application{
 		config: cfg,
@@ -73,7 +92,7 @@ func main() {
 	go func() {
 		logger.Printf("starting server in env %s, port %d", cfg.env, cfg.port)
 		if err := srv.ListenAndServe(); err != http.ErrServerClosed {
-			logger.Fatalf("could not start webserver on: %s. err: ", srv.Addr, err)
+			logger.Fatalf("could not start webserver on: %s. err: %s", srv.Addr, err)
 		}
 		wg.Done()
 	}()
@@ -81,4 +100,20 @@ func main() {
 
 	<-done
 	logger.Print("webserver stopped")
+}
+
+func openDB(dsn string) (*sql.DB, error) {
+	db, err := sql.Open("postgres", dsn)
+	if err != nil {
+		return nil, err
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	err = db.PingContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return db, nil
 }
