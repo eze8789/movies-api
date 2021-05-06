@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 
@@ -83,4 +84,17 @@ func (app *application) readJSON(w http.ResponseWriter, r *http.Request, dst int
 	}
 
 	return nil
+}
+
+func GetString(s string) string {
+	return os.Getenv(s)
+}
+
+func GetInt(s string) (int, error) {
+	val := GetString(s)
+	n, err := strconv.Atoi(val)
+	if err != nil {
+		return -1, err
+	}
+	return n, nil
 }
