@@ -25,7 +25,10 @@ type config struct {
 	port int
 	env  string
 	db   struct {
-		dsn string
+		dsn          string
+		maxOpenConns int
+		maxIdleConns int
+		maxIdleTime  string
 	}
 }
 
@@ -44,11 +47,22 @@ func main() {
 	pgUser := os.Getenv("POSTGRES_USER")
 	pgPWD := os.Getenv("POSTGRES_PWD")
 	pgDB := os.Getenv("POSTGRES_DB")
+	var err error
+	cfg.db.maxOpenConns, err = GetInt("POSTGRES_MAX_OPEN_CONNS")
+	if err != nil {
+		log.Fatal("please set a valid MaxOpenConnections")
+	}
+	cfg.db.maxIdleConns, err = GetInt("POSTGRES_MAX_IDLE_CONNS")
+	if err != nil {
+		log.Fatal("please set a valid MaxIdleConnections")
+	}
+	cfg.db.maxIdleTime = os.Getenv("POSTGRES_MAX_IDLE_TIME")
+
 	cfg.db.dsn = fmt.Sprintf("postgres://%s:%s@localhost/%s?sslmode=disable", pgUser, pgPWD, pgDB)
 
 	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime)
 
-	db, err := openDB(cfg.db.dsn)
+	db, err := openDB(cfg)
 	if err != nil {
 		logger.Fatalf("unable to connect to database: %s\n", err)
 	}
@@ -90,7 +104,7 @@ func main() {
 	wg := new(sync.WaitGroup)
 	wg.Add(1)
 	go func() {
-		logger.Printf("starting server in env %s, port %d", cfg.env, cfg.port)
+		logger.Printf("starting server in environment %s, port %d", cfg.env, cfg.port)
 		if err := srv.ListenAndServe(); err != http.ErrServerClosed {
 			logger.Fatalf("could not start webserver on: %s. err: %s", srv.Addr, err)
 		}
@@ -102,11 +116,20 @@ func main() {
 	logger.Print("webserver stopped")
 }
 
-func openDB(dsn string) (*sql.DB, error) {
-	db, err := sql.Open("postgres", dsn)
+func openDB(cfg config) (*sql.DB, error) {
+	db, err := sql.Open("postgres", cfg.db.dsn)
 	if err != nil {
 		return nil, err
 	}
+
+	db.SetMaxOpenConns(cfg.db.maxOpenConns)
+	db.SetMaxIdleConns(cfg.db.maxIdleConns)
+	t, err := time.ParseDuration(cfg.db.maxIdleTime)
+	if err != nil {
+		return nil, err
+	}
+	db.SetConnMaxIdleTime(t)
+
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
