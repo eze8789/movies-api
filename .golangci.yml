@@ -134,6 +134,7 @@ run:
     - internal/cache
     - internal/renameio
     - internal/robustio
+    - postgres-volume
 
 # golangci.com configuration
 # https://github.com/golangci/golangci/wiki/Configuration
