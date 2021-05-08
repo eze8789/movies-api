@@ -36,6 +36,7 @@ func (app *application) writeJSON(w http.ResponseWriter, status int, data envelo
 		w.Header()[k] = v
 	}
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
 	w.Write(res) //nolint:errcheck
 	return nil
 }
