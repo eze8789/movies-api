@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
 
+	"github.com/eze8789/movies-api/validator"
 	"github.com/julienschmidt/httprouter"
 )
 
@@ -98,4 +100,38 @@ func GetInt(s string) (int, error) {
 		return -1, err
 	}
 	return n, nil
+}
+
+func (app *application) readString(qs url.Values, k, defaultValue string) string {
+	s := qs.Get(k)
+
+	if s == "" {
+		return defaultValue
+	}
+
+	return s
+}
+
+func (app *application) readInt(qs url.Values, k string, defaultValue int, v *validator.Validator) int {
+	s := qs.Get(k)
+	if s == "" {
+		return defaultValue
+	}
+
+	n, err := strconv.Atoi(s)
+	if err != nil {
+		v.AddError(k, "must be an integer")
+		return defaultValue
+	}
+
+	return n
+}
+
+func (app *application) readCSV(qs url.Values, k string, defaultValue []string) []string {
+	csv := qs.Get(k)
+
+	if csv == "" {
+		return defaultValue
+	}
+	return strings.Split(csv, ",")
 }

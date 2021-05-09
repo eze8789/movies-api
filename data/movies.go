@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/eze8789/movies-api/validator"
@@ -112,6 +113,43 @@ func (m *MovieModel) Get(id int64) (*Movie, error) {
 		}
 	}
 	return &movie, nil
+}
+
+func (m *MovieModel) GetAll(title string, genres []string, filters Filters) ([]*Movie, Metadata, error) {
+	stmt := fmt.Sprintf(`SELECT count(*) OVER(), id, created_at, title, year, runtime, genres, version
+						FROM movies
+						WHERE (to_tsvector('simple', title) @@ plainto_tsquery('simple', $1) OR $1 = '')
+						AND (genres @> $2 OR $2 = '{}')
+						ORDER BY %s %s
+						LIMIT $3 OFFSET $4`, filters.sortColumn(), filters.sortDirection())
+	args := []interface{}{title, pq.Array(genres), filters.limit(), filters.offset()}
+
+	ctx, cancel := context.WithTimeout(context.Background(), QueryTimeOut*time.Second)
+	defer cancel()
+
+	r, err := m.DB.QueryContext(ctx, stmt, args...)
+	if err != nil {
+		return nil, Metadata{}, err
+	}
+	defer r.Close()
+
+	totalRecords := 0
+	movies := []*Movie{}
+	for r.Next() {
+		var movie Movie
+		err := r.Scan(&totalRecords, &movie.ID, &movie.CreatedAt, &movie.Title, &movie.Year, &movie.Runtime,
+			pq.Array(&movie.Genres), &movie.Version)
+		if err != nil {
+			return nil, Metadata{}, err
+		}
+		movies = append(movies, &movie)
+	}
+	if err := r.Err(); err != nil {
+		return nil, Metadata{}, err
+	}
+	metadata := calcMetadata(totalRecords, filters.Page, filters.PageSize)
+
+	return movies, metadata, nil
 }
 
 func (m *MovieModel) Delete(id int64) error {

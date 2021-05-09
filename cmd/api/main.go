@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/eze8789/movies-api/data"
+	"github.com/eze8789/movies-api/jsonlog"
 	_ "github.com/lib/pq"
 )
 
@@ -35,7 +36,7 @@ type config struct {
 
 type application struct {
 	config config
-	logger *log.Logger
+	logger *jsonlog.Logger
 	models data.Models
 }
 
@@ -46,10 +47,14 @@ func main() {
 	flag.StringVar(&cfg.env, "env", "dev", "Running environment")
 	flag.Parse()
 
+	logLevel, err := GetInt("MOVIES_API_LOG_LEVEL")
+	if err != nil {
+		log.Fatal("please set a valid log level")
+	}
+
 	pgUser := os.Getenv("POSTGRES_USER")
 	pgPWD := os.Getenv("POSTGRES_PWD")
 	pgDB := os.Getenv("POSTGRES_DB")
-	var err error
 	cfg.db.maxOpenConns, err = GetInt("POSTGRES_MAX_OPEN_CONNS")
 	if err != nil {
 		log.Fatal("please set a valid MaxOpenConnections")
@@ -62,15 +67,15 @@ func main() {
 
 	cfg.db.dsn = fmt.Sprintf("postgres://%s:%s@localhost/%s?sslmode=disable", pgUser, pgPWD, pgDB)
 
-	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime)
+	logger := jsonlog.New(os.Stdout, jsonlog.Level(logLevel))
 
 	db, err := openDB(cfg)
 	if err != nil {
-		logger.Fatalf("unable to connect to database: %s\n", err)
+		logger.LogFatal(err, nil)
 	}
 	defer db.Close()
 
-	logger.Printf("database connection established")
+	logger.LogInfo("database connection established", nil)
 
 	app := &application{
 		config: cfg,
@@ -81,6 +86,7 @@ func main() {
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%d", cfg.port),
 		Handler:      app.routes(),
+		ErrorLog:     log.New(logger, "", 0),
 		IdleTimeout:  time.Minute,
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 30 * time.Second,
@@ -92,13 +98,13 @@ func main() {
 	// gracefully shutdown
 	go func() {
 		<-quit
-		logger.Println("shutting down webserver")
+		logger.LogInfo("shutting down webserver", nil)
 		ctx, cancel := context.WithTimeout(context.Background(), webserverTimeout*time.Second)
 		defer cancel()
 
 		srv.SetKeepAlivesEnabled(false)
 		if err := srv.Shutdown(ctx); err != nil {
-			logger.Fatal("could not gracefully shutdown server")
+			logger.LogFatal(err, nil)
 		}
 		close(done)
 	}()
@@ -107,16 +113,16 @@ func main() {
 	wg := new(sync.WaitGroup)
 	wg.Add(1)
 	go func() {
-		logger.Printf("starting server in environment %s, port %d", cfg.env, cfg.port)
+		logger.LogInfo(fmt.Sprintf("starting server in environment %s, port %d", cfg.env, cfg.port), nil)
 		if err := srv.ListenAndServe(); err != http.ErrServerClosed {
-			logger.Fatalf("could not start webserver on: %s. err: %s", srv.Addr, err)
+			logger.LogFatal(err, nil) // "could not start webserver on: %s. err: %s", srv.Addr, err)
 		}
 		wg.Done()
 	}()
 	wg.Wait()
 
 	<-done
-	logger.Print("webserver stopped")
+	logger.LogInfo("webserver stopped", nil)
 }
 
 func openDB(cfg config) (*sql.DB, error) {

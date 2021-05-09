@@ -6,7 +6,10 @@ import (
 )
 
 func (app *application) logError(r *http.Request, err error) {
-	app.logger.Println(r.RemoteAddr, r.URL, err)
+	app.logger.LogError(err, map[string]string{"request_method": r.Method,
+		"request_url":    r.URL.String(),
+		"request_source": r.RemoteAddr,
+	})
 }
 
 func (app *application) errorResponse(w http.ResponseWriter, r *http.Request, status int, message interface{}) {
