@@ -3,7 +3,7 @@ package validator
 import "regexp"
 
 var (
-	EmailRX = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+\\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
+	EmailRX = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+\\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$") //nolint:lll
 )
 
 type Validator struct {
@@ -43,25 +43,26 @@ func (v *Validator) Matches(val string, rx *regexp.Regexp) bool {
 	return rx.MatchString(val)
 }
 
+//nolint:gocritic
 func (v *Validator) Unique(values []string) bool {
 	uniqueVals := make(map[string]bool)
-	// for _, v := range values {
-	// 	if _, ok := uniqueVals[v]; !ok {
-	// 		uniqueVals[v] = true
-	// 		continue
-	// 	}
-	// 	if _, ok := uniqueVals[v]; ok {
-	// 		uniqueVals[v] = false
-	// 	}
-	// }
-	// for _, v := range uniqueVals {
-	// 	if !v {
-	// 		return false
-	// 	}
-	// }
-	// return true
 	for _, v := range values {
-		uniqueVals[v] = true
+		if _, ok := uniqueVals[v]; !ok {
+			uniqueVals[v] = true
+			continue
+		}
+		if _, ok := uniqueVals[v]; ok {
+			uniqueVals[v] = false
+		}
 	}
-	return len(values) == len(uniqueVals)
+	for _, v := range uniqueVals {
+		if !v {
+			return false
+		}
+	}
+	return true
+	// for _, v := range values {
+	// 	uniqueVals[v] = true
+	// }
+	// return len(values) == len(uniqueVals)
 }

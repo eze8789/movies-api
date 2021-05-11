@@ -24,14 +24,15 @@ type Metadata struct {
 
 func ValidateFilter(v *validator.Validator, f Filters) {
 	v.Check(f.Page > 0, "page", "page needs to be greater than 0")
-	v.Check(f.Page <= 1000, "page", "page needs to be lower than 1000")
+	v.Check(f.Page <= 1000, "page", "page needs to be lower than 1000") //nolint:gomnd
 
 	v.Check(f.PageSize >= 1, "page_size", "page_size can not be less than 1")
-	v.Check(f.PageSize <= 100, "page_size", "page_size can not be greater than 100")
+	v.Check(f.PageSize <= 100, "page_size", "page_size can not be greater than 100") //nolint:gomnd
 
 	v.Check(v.In(f.Sort, f.SortSafe...), "sort", "invalid sort value")
 }
 
+//nolint:gocritic
 func (f Filters) sortColumn() string {
 	// s := strings.Split(f.Sort, "-")
 	// if len(s) == 1 {

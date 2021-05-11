@@ -11,18 +11,6 @@ import (
 	"github.com/lib/pq"
 )
 
-// {
-//     "id": 123,
-//     "title": "Casablanca",
-//     "runtime": 102,
-//     "genres": [
-//         "drama",
-//         "romance",
-//         "war"
-//     ],
-//     "version": 1
-// }
-
 const QueryTimeOut = 3
 
 type Movie struct {
@@ -41,11 +29,11 @@ type MovieModel struct {
 
 func ValidateMovie(v *validator.Validator, movie *Movie) {
 	v.Check(movie.Title != "", "title", "must be provided")
-	v.Check(len(movie.Title) <= 500, "title", "must not be more than 500 bytes long")
+	v.Check(len(movie.Title) <= 500, "title", "must not be more than 500 bytes long") //nolint:gomnd
 
 	v.Check(movie.Year != 0, "year", "must be provided")
 	v.Check(movie.Year <= int32(time.Now().Year()), "year", "must be less or equal current year")
-	v.Check(movie.Year >= 1900, "year", "must be after 1900")
+	v.Check(movie.Year >= 1900, "year", "must be after 1900") //nolint:gomnd
 
 	v.Check(len(movie.Genres) > 0, "genres", "add at least one genre")
 	v.Check(v.Unique(movie.Genres), "genres", "genres must be unique")
@@ -115,6 +103,7 @@ func (m *MovieModel) Get(id int64) (*Movie, error) {
 	return &movie, nil
 }
 
+//nolint:gosec
 func (m *MovieModel) GetAll(title string, genres []string, filters Filters) ([]*Movie, Metadata, error) {
 	stmt := fmt.Sprintf(`SELECT count(*) OVER(), id, created_at, title, year, runtime, genres, version
 						FROM movies

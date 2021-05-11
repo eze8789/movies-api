@@ -19,6 +19,7 @@ const (
 	LevelOff                // 4
 )
 
+//nolint:exhaustive
 func (l Level) String() string {
 	switch l {
 	case LevelDebug:
