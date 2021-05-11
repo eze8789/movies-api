@@ -10,6 +10,9 @@ The project integrates a GO webserver with a Postgres DB as a data store.
 ```make build```
 
 #### Run
+
+Replace values from development.sh file, source it and run:
+
 ```make build run```
 
 #### Run GO in tmp
