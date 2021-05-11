@@ -115,7 +115,7 @@ func main() {
 	go func() {
 		logger.LogInfo(fmt.Sprintf("starting server in environment %s, port %d", cfg.env, cfg.port), nil)
 		if err := srv.ListenAndServe(); err != http.ErrServerClosed {
-			logger.LogFatal(err, nil) // "could not start webserver on: %s. err: %s", srv.Addr, err)
+			logger.LogFatal(err, nil)
 		}
 		wg.Done()
 	}()
