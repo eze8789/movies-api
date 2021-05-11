@@ -6,7 +6,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-func (app *application) routes() *httprouter.Router {
+func (app *application) routes() http.Handler {
 	rtr := httprouter.New()
 	rtr.RedirectTrailingSlash = true
 	rtr.NotFound = http.HandlerFunc(app.notFoundResponse)
@@ -19,5 +19,5 @@ func (app *application) routes() *httprouter.Router {
 	rtr.HandlerFunc(http.MethodPatch, "/v1/movies/:id", app.updateMovieHandler)
 	rtr.HandlerFunc(http.MethodDelete, "/v1/movies/:id", app.deleteMovieHandler)
 
-	return rtr
+	return app.recoverPanic(rtr)
 }
