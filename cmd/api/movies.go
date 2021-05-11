@@ -31,7 +31,7 @@ func (app *application) createMovieHandler(w http.ResponseWriter, r *http.Reques
 		Genres:  input.Genres,
 	}
 
-	if data.ValidateMovie(v, movie); !v.Valid() {
+	if data.ValidateMovie(v, movie); !v.Valid() { //nolint:gocritic
 		app.logError(r, err)
 		app.failedValidationResponse(w, r, v.Errors)
 		return
@@ -131,7 +131,7 @@ func (app *application) updateMovieHandler(w http.ResponseWriter, r *http.Reques
 	}
 
 	v := validator.New()
-	if data.ValidateMovie(v, movie); !v.Valid() {
+	if data.ValidateMovie(v, movie); !v.Valid() { //nolint:gocritic
 		app.logError(r, err)
 		app.failedValidationResponse(w, r, v.Errors)
 		return
@@ -201,7 +201,7 @@ func (app *application) listMovieHandler(w http.ResponseWriter, r *http.Request)
 	input.Filters.Sort = app.readString(qs, "sort", "id")
 	input.Filters.SortSafe = []string{"id", "-id", "title", "-title", "year", "-year", "runtime", "-runtime"}
 
-	if data.ValidateFilter(v, input.Filters); !v.Valid() {
+	if data.ValidateFilter(v, input.Filters); !v.Valid() { //nolint:gocritic
 		app.logError(r, errors.New("unable to validate data"))
 		app.failedValidationResponse(w, r, v.Errors)
 		return
