@@ -102,6 +102,19 @@ func GetInt(s string) (int, error) {
 	return n, nil
 }
 
+func GetFloat(s string) (float64, error) {
+	val := GetString(s)
+	n, err := strconv.ParseFloat(val, 64)
+	if err != nil {
+		return -1, err
+	}
+	return n, nil
+}
+
+func GetBool(s string) bool {
+	return GetString(s) == "true"
+}
+
 func (app *application) readString(qs url.Values, k, defaultValue string) string {
 	s := qs.Get(k)
 

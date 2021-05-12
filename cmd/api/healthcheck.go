@@ -1,10 +1,12 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 )
 
 func (app *application) healthcheckHandler(w http.ResponseWriter, r *http.Request) {
+	app.logger.LogInfo(fmt.Sprintf("%s - %s: %s", r.RemoteAddr, r.Method, r.URL.String()), nil)
 	d := envelope{
 		"status": "available",
 		"system_info": map[string]string{

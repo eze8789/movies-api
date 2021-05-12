@@ -75,6 +75,7 @@ func (l *Logger) print(level Level, message string, properties map[string]string
 		logLine = []byte(LevelError.String() + ":unable to parse log message:" + err.Error())
 	}
 
+	// Avoid race conditions between logs newlines
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	return l.out.Write(append(logLine, '\n'))

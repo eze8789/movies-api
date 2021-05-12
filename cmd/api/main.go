@@ -32,6 +32,11 @@ type config struct {
 		maxIdleConns int
 		maxIdleTime  string
 	}
+	limiter struct {
+		rps     float64
+		burst   int
+		enabled bool
+	}
 }
 
 type application struct {
@@ -40,6 +45,7 @@ type application struct {
 	models data.Models
 }
 
+// nolint: funlen
 func main() {
 	var cfg config
 
@@ -52,6 +58,18 @@ func main() {
 		log.Fatal("please set a valid log level")
 	}
 
+	// Configure Rate Limiting
+	cfg.limiter.rps, err = GetFloat("RATE_LIMIT_RPS")
+	if err != nil {
+		log.Fatal("please set a valid RPS rate limit value")
+	}
+	cfg.limiter.burst, err = GetInt("RATE_LIMIT_BURST")
+	if err != nil {
+		log.Fatal("please set a valid RPS rate limit value")
+	}
+	cfg.limiter.enabled = GetBool("RATE_LIMIT_ENABLED")
+
+	// Configure Postgres DB
 	pgUser := os.Getenv("POSTGRES_USER")
 	pgPWD := os.Getenv("POSTGRES_PWD")
 	pgDB := os.Getenv("POSTGRES_DB")
@@ -69,7 +87,7 @@ func main() {
 
 	logger := jsonlog.New(os.Stdout, jsonlog.Level(logLevel))
 
-	db, err := openDB(cfg)
+	db, err := openDB(&cfg)
 	if err != nil {
 		logger.LogFatal(err, nil)
 	}
@@ -95,6 +113,7 @@ func main() {
 	done := make(chan bool, 1)
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM)
+
 	// gracefully shutdown
 	go func() {
 		<-quit
@@ -125,7 +144,7 @@ func main() {
 	logger.LogInfo("webserver stopped", nil)
 }
 
-func openDB(cfg config) (*sql.DB, error) {
+func openDB(cfg *config) (*sql.DB, error) {
 	db, err := sql.Open("postgres", cfg.db.dsn)
 	if err != nil {
 		return nil, err
