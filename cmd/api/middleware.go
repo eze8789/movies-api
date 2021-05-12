@@ -63,6 +63,7 @@ func (app *application) rateLimiter(next http.Handler) http.Handler {
 			clients[h].lastSeen = time.Now()
 
 			if !clients[h].limiter.Allow() {
+				app.logError(r, fmt.Errorf("%s - %s: %s Too many requests", r.RemoteAddr, r.Method, r.URL.String()))
 				mu.Unlock()
 				app.rateLimitExceedResponse(w, r)
 				return

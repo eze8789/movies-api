@@ -6,11 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"net/http"
 	"os"
-	"os/signal"
-	"sync"
-	"syscall"
 	"time"
 
 	"github.com/eze8789/movies-api/data"
@@ -45,7 +41,6 @@ type application struct {
 	models data.Models
 }
 
-// nolint: funlen
 func main() {
 	var cfg config
 
@@ -101,47 +96,7 @@ func main() {
 		models: data.NewModels(db),
 	}
 
-	srv := &http.Server{
-		Addr:         fmt.Sprintf(":%d", cfg.port),
-		Handler:      app.routes(),
-		ErrorLog:     log.New(logger, "", 0),
-		IdleTimeout:  time.Minute,
-		ReadTimeout:  10 * time.Second,
-		WriteTimeout: 30 * time.Second,
-	}
-
-	done := make(chan bool, 1)
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM)
-
-	// gracefully shutdown
-	go func() {
-		<-quit
-		logger.LogInfo("shutting down webserver", nil)
-		ctx, cancel := context.WithTimeout(context.Background(), webserverTimeout*time.Second)
-		defer cancel()
-
-		srv.SetKeepAlivesEnabled(false)
-		if err := srv.Shutdown(ctx); err != nil {
-			logger.LogFatal(err, nil)
-		}
-		close(done)
-	}()
-
-	// start webserver
-	wg := new(sync.WaitGroup)
-	wg.Add(1)
-	go func() {
-		logger.LogInfo(fmt.Sprintf("starting server in environment %s, port %d", cfg.env, cfg.port), nil)
-		if err := srv.ListenAndServe(); err != http.ErrServerClosed {
-			logger.LogFatal(err, nil)
-		}
-		wg.Done()
-	}()
-	wg.Wait()
-
-	<-done
-	logger.LogInfo("webserver stopped", nil)
+	app.server()
 }
 
 func openDB(cfg *config) (*sql.DB, error) {
