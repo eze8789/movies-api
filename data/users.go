@@ -10,6 +10,10 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+const (
+	ErrEmailConstraintPG = `pq: duplicate key value violates unique constraint "users_email_key"`
+)
+
 type User struct {
 	ID        int64     `json:"id"`
 	CreatedAT time.Time `json:"created_at"`
@@ -97,7 +101,7 @@ func (um *UserModel) Insert(user *User) error {
 	err := um.DB.QueryRowContext(ctx, stmt, args).Scan(&user.ID, &user.CreatedAT, &user.Version)
 	if err != nil {
 		switch {
-		case err.Error() == `pq: duplicate key value violates unique constraint "users_email_key"`:
+		case err.Error() == ErrEmailConstraintPG:
 			return ErrDuplicatedEmail
 		default:
 			return err
@@ -119,7 +123,7 @@ func (um *UserModel) Update(user *User) error {
 	err := um.DB.QueryRowContext(ctx, stmt, args...).Scan(&user.Version)
 	if err != nil {
 		switch {
-		case err.Error() == `pq: duplicate key value violates unique constraint "users_email_key"`:
+		case err.Error() == ErrEmailConstraintPG:
 			return ErrDuplicatedEmail
 		case errors.Is(err, sql.ErrNoRows):
 			return ErrEditConflict
