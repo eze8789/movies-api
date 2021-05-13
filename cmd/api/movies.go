@@ -25,6 +25,7 @@ func (app *application) createMovieHandler(w http.ResponseWriter, r *http.Reques
 	}
 
 	v := validator.New()
+	// copy json to struct to validate input before create the movie in the database
 	movie := &data.Movie{
 		Title:   input.Title,
 		Year:    input.Year,

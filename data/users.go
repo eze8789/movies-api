@@ -59,12 +59,13 @@ func (p *password) Match(s string) (bool, error) {
 	return true, nil
 }
 
+// ValidateEmail ensure the email is present and is a valid address
 func ValidateEmail(v *validator.Validator, email string) {
 	v.Check(email != "", "email", "must be provided")
 	v.Check(validator.Matches(email, validator.EmailRX), "email", "must be a valid email")
 }
 
-// validatePasswordPlain ensure a password is larger than 8 bytes and less than 72 bytes
+// ValidatePasswordPlain ensure a password is larger than 8 bytes and less than 72 bytes
 // bcrypt truncate anything larger than 72 bytes: https://en.wikipedia.org/wiki/Bcrypt#Maximum_password_length
 // for production services this can be pre hashed to avoid this limitation
 func ValidatePasswordPlain(v *validator.Validator, pwd string) {
@@ -73,6 +74,8 @@ func ValidatePasswordPlain(v *validator.Validator, pwd string) {
 	v.Check(len(pwd) <= 72, "password", "must be less than 72 bytes long") //nolint:gomnd
 }
 
+// ValidateUser ensure the User provide a valid name and use ValidateEmail and ValidatePassword
+// to ensure those fields are valid
 func ValidateUser(v *validator.Validator, u *User) {
 	v.Check(u.Name != "", "name", "can not be empty")
 	v.Check(len(u.Name) < 100, "name", "must not be larger than 100 bytes") //nolint:gomnd

@@ -22,7 +22,7 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	// copy json to struct to validate before create the user in the database
+	// copy json to struct to validate input before create the user in the database
 	user := &data.User{
 		Name:      input.Name,
 		Email:     input.Email,
@@ -46,6 +46,8 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 		app.logError(r, err)
 		switch {
 		case errors.Is(err, data.ErrDuplicatedEmail):
+			// This message makes us suceptible to user enumeration, if privacy matters
+			// remove the message or make it ambiguous
 			v.AddError("email", "email already registered")
 			app.failedValidationResponse(w, r, v.Errors)
 		default:
