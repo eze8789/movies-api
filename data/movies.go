@@ -11,8 +11,6 @@ import (
 	"github.com/lib/pq"
 )
 
-const QueryTimeOut = 3
-
 type Movie struct {
 	ID        int64     `json:"id,omitempty"`
 	CreatedAt time.Time `json:"-"`
@@ -57,7 +55,7 @@ func (m *MovieModel) Insert(movie *Movie) error {
 func (m *MovieModel) Update(movie *Movie) error {
 	stmt := `UPDATE movies
 	SET title = $1, year = $2, runtime = $3, genres = $4, version = version + 1
-	WHERE id = $5 AND version =$6
+	WHERE id = $5 AND version = $6
 	RETURNING version`
 	args := []interface{}{movie.Title, movie.Year, movie.Runtime, pq.Array(movie.Genres), movie.ID, movie.Version}
 
