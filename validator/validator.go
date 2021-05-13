@@ -39,7 +39,7 @@ func (v *Validator) In(val string, list ...string) bool {
 	return false
 }
 
-func (v *Validator) Matches(val string, rx *regexp.Regexp) bool {
+func Matches(val string, rx *regexp.Regexp) bool {
 	return rx.MatchString(val)
 }
 
