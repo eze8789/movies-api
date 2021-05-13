@@ -59,34 +59,34 @@ func (p *password) Match(s string) (bool, error) {
 	return true, nil
 }
 
+func ValidateEmail(v *validator.Validator, email string) {
+	v.Check(email != "", "email", "must be provided")
+	v.Check(validator.Matches(email, validator.EmailRX), "email", "must be a valid email")
+}
+
+// validatePasswordPlain ensure a password is larger than 8 bytes and less than 72 bytes
+// bcrypt truncate anything larger than 72 bytes: https://en.wikipedia.org/wiki/Bcrypt#Maximum_password_length
+// for production services this can be pre hashed to avoid this limitation
+func ValidatePasswordPlain(v *validator.Validator, pwd string) {
+	v.Check(pwd != "", "password", "must be provided")
+	v.Check(len(pwd) >= 8, "password", "must be at least 8 bytes long")    //nolint:gomnd
+	v.Check(len(pwd) <= 72, "password", "must be less than 72 bytes long") //nolint:gomnd
+}
+
 func ValidateUser(v *validator.Validator, u *User) {
 	v.Check(u.Name != "", "name", "can not be empty")
 	v.Check(len(u.Name) < 100, "name", "must not be larger than 100 bytes") //nolint:gomnd
 
-	validateEmail(v, u.Email)
+	ValidateEmail(v, u.Email)
 
 	if u.Password.plainPWD != nil {
-		validatePasswordPlain(v, *u.Password.plainPWD)
+		ValidatePasswordPlain(v, *u.Password.plainPWD)
 	}
 
 	// no input data problem, adding here as a fallback if some other parts fail
 	if u.Password.hashedPWD == nil {
 		panic("password hash missed")
 	}
-}
-
-func validateEmail(v *validator.Validator, email string) {
-	v.Check(email != "", "email", "must be provided")
-	v.Check(v.Matches(email, validator.EmailRX), "email", "must be a valid email")
-}
-
-// validatePasswordPlain ensure a password is larger than 8 bytes and less than 72 bytes
-// bcrypt truncate anything larger than 72 bytes: https://en.wikipedia.org/wiki/Bcrypt#Maximum_password_length
-// for production services this can be pre hashed to avoid this limitation
-func validatePasswordPlain(v *validator.Validator, pwd string) {
-	v.Check(pwd != "", "password", "must be provided")
-	v.Check(len(pwd) >= 8, "password", "must be at least 8 bytes long")    //nolint:gomnd
-	v.Check(len(pwd) <= 72, "password", "must be less than 72 bytes long") //nolint:gomnd
 }
 
 func (um *UserModel) Insert(user *User) error {
@@ -98,7 +98,7 @@ func (um *UserModel) Insert(user *User) error {
 	ctx, cancel := context.WithTimeout(context.Background(), QueryTimeOut*time.Second)
 	defer cancel()
 
-	err := um.DB.QueryRowContext(ctx, stmt, args).Scan(&user.ID, &user.CreatedAT, &user.Version)
+	err := um.DB.QueryRowContext(ctx, stmt, args...).Scan(&user.ID, &user.CreatedAT, &user.Version)
 	if err != nil {
 		switch {
 		case err.Error() == ErrEmailConstraintPG:

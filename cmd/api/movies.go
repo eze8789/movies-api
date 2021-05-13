@@ -33,7 +33,7 @@ func (app *application) createMovieHandler(w http.ResponseWriter, r *http.Reques
 	}
 
 	if data.ValidateMovie(v, movie); !v.Valid() { //nolint:gocritic
-		app.logError(r, err)
+		app.logError(r, errors.New("movie validation error"))
 		app.failedValidationResponse(w, r, v.Errors)
 		return
 	}
