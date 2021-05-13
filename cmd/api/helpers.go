@@ -148,3 +148,18 @@ func (app *application) readCSV(qs url.Values, k string, defaultValue []string) 
 	}
 	return strings.Split(csv, ",")
 }
+
+func (app *application) runBackground(fn func()) {
+	app.wg.Add(1)
+	go func() {
+		defer app.wg.Done()
+		// Recover goroutine in case of panic
+		defer func() {
+			if err := recover(); err != nil {
+				app.logger.LogError(fmt.Errorf("%s", err), nil)
+			}
+		}()
+		// Execute background work
+		fn()
+	}()
+}

@@ -56,7 +56,15 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	err = app.writeJSON(w, http.StatusCreated, envelope{"user": user}, nil)
+	// Run send mail process on background to ensure UX is not affected
+	app.runBackground(func() {
+		err = app.mailer.Send(user.Email, "registered_user.tmpl", user)
+		if err != nil {
+			app.logError(r, err)
+		}
+	})
+
+	err = app.writeJSON(w, http.StatusAccepted, envelope{"user": user}, nil)
 	if err != nil {
 		app.logError(r, err)
 		app.serverErrorResponse(w, r, err)

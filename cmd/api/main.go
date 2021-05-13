@@ -7,10 +7,12 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/eze8789/movies-api/data"
 	"github.com/eze8789/movies-api/jsonlog"
+	"github.com/eze8789/movies-api/mails"
 	_ "github.com/lib/pq"
 )
 
@@ -33,12 +35,21 @@ type config struct {
 		burst   int
 		enabled bool
 	}
+	smtp struct {
+		host     string
+		port     int
+		username string
+		password string
+		sender   string
+	}
 }
 
 type application struct {
 	config config
 	logger *jsonlog.Logger
 	models data.Models
+	mailer mails.Mailer
+	wg     sync.WaitGroup
 }
 
 func main() {
@@ -52,6 +63,21 @@ func main() {
 	if err != nil {
 		log.Fatal("please set a valid log level")
 	}
+
+	logger := jsonlog.New(os.Stdout, jsonlog.Level(logLevel))
+
+	// Configure mailer
+	cfg.smtp.host = os.Getenv("MAILER_SMTP_HOST")
+	cfg.smtp.port, err = GetInt("MAILER_SMTP_PORT")
+	if err != nil {
+		log.Fatal("please set a valid SMTP port")
+	}
+	cfg.smtp.username = os.Getenv("MAILER_SMTP_USERNAME")
+	cfg.smtp.password = os.Getenv("MAILER_SMTP_PASSWORD")
+	cfg.smtp.sender = os.Getenv("MAILER_SMTP_SENDER")
+
+	mailer := mails.New(cfg.smtp.host, cfg.smtp.port,
+		cfg.smtp.username, cfg.smtp.password, cfg.smtp.sender)
 
 	// Configure Rate Limiting
 	cfg.limiter.rps, err = GetFloat("RATE_LIMIT_RPS")
@@ -77,10 +103,7 @@ func main() {
 		log.Fatal("please set a valid MaxIdleConnections")
 	}
 	cfg.db.maxIdleTime = os.Getenv("POSTGRES_MAX_IDLE_TIME")
-
 	cfg.db.dsn = fmt.Sprintf("postgres://%s:%s@localhost/%s?sslmode=disable", pgUser, pgPWD, pgDB)
-
-	logger := jsonlog.New(os.Stdout, jsonlog.Level(logLevel))
 
 	db, err := openDB(&cfg)
 	if err != nil {
@@ -94,6 +117,7 @@ func main() {
 		config: cfg,
 		logger: logger,
 		models: data.NewModels(db),
+		mailer: mailer,
 	}
 
 	app.server()

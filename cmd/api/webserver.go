@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"sync"
 	"syscall"
 	"time"
 )
@@ -29,7 +28,7 @@ func (app *application) server() {
 	// gracefully shutdown
 	go func() {
 		sig := <-quit
-		app.logger.LogInfo("shutting down webserver", map[string]string{"signal": sig.String()})
+		app.logger.LogInfo("shutting down webserver, waiting for background tasks", map[string]string{"signal": sig.String()})
 		ctx, cancel := context.WithTimeout(context.Background(), webserverTimeout*time.Second)
 		defer cancel()
 
@@ -41,16 +40,15 @@ func (app *application) server() {
 	}()
 
 	// start webserver
-	wg := new(sync.WaitGroup)
-	wg.Add(1)
+	app.wg.Add(1)
 	go func() {
 		app.logger.LogInfo("starting webserver", map[string]string{"environment": app.config.env, "port": srv.Addr})
 		if err := srv.ListenAndServe(); err != http.ErrServerClosed {
 			app.logger.LogFatal(err, nil)
 		}
-		wg.Done()
+		app.wg.Done()
 	}()
-	wg.Wait()
+	app.wg.Wait()
 
 	<-done
 	app.logger.LogInfo("webserver stopped", map[string]string{"environment": app.config.env, "port": srv.Addr})
