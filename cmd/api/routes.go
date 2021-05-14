@@ -23,5 +23,10 @@ func (app *application) routes() http.Handler {
 
 	// Users Endpoints
 	rtr.HandlerFunc(http.MethodPost, "/v1/users", app.registerUserHandler)
+	rtr.HandlerFunc(http.MethodPut, "/v1/users/activate", app.activateUserHandler)
+
+	// Tokens Endpoints
+	rtr.HandlerFunc(http.MethodPost, "/v1/tokens/activation", app.createActivationTokenHandler)
+
 	return app.recoverPanic(app.rateLimiter(rtr))
 }

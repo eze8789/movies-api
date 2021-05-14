@@ -2,6 +2,7 @@ package data
 
 import (
 	"context"
+	"crypto/sha256"
 	"database/sql"
 	"errors"
 	"time"
@@ -157,5 +158,34 @@ func (um *UserModel) GetByEmail(e string) (*User, error) {
 			return nil, err
 		}
 	}
+	return &user, nil
+}
+
+func (um *UserModel) GetForToken(token, scope string) (*User, error) {
+	// calculate hash before compare
+	tokenHash := sha256.Sum256([]byte(token))
+
+	stmt := ` SELECT users.id, users.created_at, users.name, users.email, users.password_hash, users.activated, users.version
+	FROM users
+	INNER JOIN tokens
+	ON users.id = tokens.user_id
+	WHERE tokens.hash = $1 AND tokens.scope = $2 AND tokens.expiry > $3`
+	args := []interface{}{tokenHash[:], scope, time.Now()}
+
+	ctx, cancel := context.WithTimeout(context.Background(), QueryTimeOut*time.Second)
+	defer cancel()
+
+	var user User
+	err := um.DB.QueryRowContext(ctx, stmt, args...).Scan(&user.ID, &user.CreatedAT, &user.Name, &user.Email,
+		&user.Password.hashedPWD, &user.Activated, &user.Version)
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return nil, ErrRecordNotFound
+		default:
+			return nil, err
+		}
+	}
+
 	return &user, nil
 }

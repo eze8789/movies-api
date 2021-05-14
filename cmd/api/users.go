@@ -18,6 +18,7 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 	}
 	err := app.readJSON(w, r, &input)
 	if err != nil {
+		app.logger.LogError(err, nil)
 		app.badRequestResponse(w, r, err)
 		return
 	}
@@ -56,17 +57,91 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	// generate token for email activation
+	token, err := app.models.Tokens.New(user.ID, data.ActivationTokenDuration, data.ScopeActivation)
+	if err != nil {
+		app.logger.LogError(err, nil)
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
 	// Run send mail process on background to ensure UX is not affected
 	app.runBackground(func() {
-		err = app.mailer.Send(user.Email, "registered_user.tmpl", user)
+		tmplData := map[string]interface{}{
+			"activationToken": token.PlainToken,
+			"userName":        user.Name,
+		}
+		err = app.mailer.Send(user.Email, "registered_user.tmpl", tmplData)
 		if err != nil {
-			app.logError(r, err)
+			app.logger.LogError(err, nil)
 		}
 	})
 
 	err = app.writeJSON(w, http.StatusAccepted, envelope{"user": user}, nil)
 	if err != nil {
-		app.logError(r, err)
+		app.logger.LogError(err, nil)
+		app.serverErrorResponse(w, r, err)
+	}
+}
+
+func (app *application) activateUserHandler(w http.ResponseWriter, r *http.Request) {
+	app.logger.LogInfo(fmt.Sprintf("%s - %s: %s", r.RemoteAddr, r.Method, r.URL.String()), nil)
+
+	var input struct {
+		TokenPlain string `json:"token"`
+	}
+	err := app.readJSON(w, r, &input)
+	if err != nil {
+		app.logger.LogError(err, nil)
+		app.badRequestResponse(w, r, err)
+		return
+	}
+
+	v := validator.New()
+	if data.ValidateTokenPlain(v, input.TokenPlain); !v.Valid() { //nolint:gocritic
+		app.logError(r, errors.New("token validation error"))
+		app.failedValidationResponse(w, r, v.Errors)
+		return
+	}
+
+	// retrieve user for the given token
+	u, err := app.models.Users.GetForToken(input.TokenPlain, data.ScopeActivation)
+	if err != nil {
+		app.logger.LogError(err, nil)
+		switch {
+		case errors.Is(err, data.ErrRecordNotFound):
+			v.AddError("token", "invalid or expired token")
+			app.failedValidationResponse(w, r, v.Errors)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+
+	u.Activated = true
+	err = app.models.Users.Update(u)
+
+	if err != nil {
+		app.logger.LogError(err, nil)
+		switch {
+		case errors.Is(err, data.ErrEditConflict):
+			app.editConflictResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+
+	err = app.models.Tokens.DeleteAllByUser(u.ID, data.ScopeActivation)
+	if err != nil {
+		app.logger.LogError(err, nil)
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"user": u}, nil)
+	if err != nil {
+		app.logger.LogError(err, nil)
 		app.serverErrorResponse(w, r, err)
 	}
 }

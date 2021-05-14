@@ -9,18 +9,20 @@ const QueryTimeOut = 3
 
 var (
 	ErrRecordNotFound  = errors.New("record not found")
-	ErrEditConflict    = errors.New("edit conflict")
+	ErrEditConflict    = errors.New("edit conflict, please try again")
 	ErrDuplicatedEmail = errors.New("email already registered")
 )
 
 type Models struct {
 	Movies MovieModel
 	Users  UserModel
+	Tokens TokensModel
 }
 
 func NewModels(db *sql.DB) Models {
 	return Models{
 		Movies: MovieModel{DB: db},
 		Users:  UserModel{DB: db},
+		Tokens: TokensModel{DB: db},
 	}
 }

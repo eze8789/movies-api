@@ -67,7 +67,7 @@ func (app *application) showMovieHandler(w http.ResponseWriter, r *http.Request)
 
 	movie, err := app.models.Movies.Get(id)
 	if err != nil {
-		app.logError(r, err)
+		app.logger.LogError(err, nil)
 		switch {
 		case errors.Is(err, data.ErrRecordNotFound):
 			app.notFoundResponse(w, r)

@@ -1,9 +1,9 @@
-{{define "subject"}}Welcome to Movies API{{end}}
+{{define "subject"}}Movies API account activation{{end}}
 
 {{define "plainBody"}} 
 Hi {{.Name}},
 
-Welcome to the Movies API.
+You're receiving this email because a new token activation was requested.
 
 For account activation please send to the endpoint: `PUT /v1/users/activated`, the following JSON payload:
 
@@ -25,7 +25,7 @@ Thank you for registering.
 
 <body>
     <p>Hi {{.Name}},</p>
-    <p>Welcome to the Movies API.</p>
+    <p>You're receiving this email because a new token activation was requested.</p>
 
     <p>For account activation please send to the endpoint: `PUT /v1/users/activated`, the following JSON payload:</p>
     <pre><code>
