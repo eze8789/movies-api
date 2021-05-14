@@ -1,12 +1,16 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
+	"github.com/eze8789/movies-api/data"
+	"github.com/eze8789/movies-api/validator"
 	"golang.org/x/time/rate"
 )
 
@@ -73,4 +77,73 @@ func (app *application) rateLimiter(next http.Handler) http.Handler {
 		}
 		next.ServeHTTP(w, r)
 	})
+}
+
+func (app *application) authenticate(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Add("Vary", "Authorization")
+		// Get the authorization header to retrieve the token
+		authHeader := r.Header.Get("Authorization")
+
+		// validate token is not empty, if it is return request with anonymous user
+		if authHeader == "" {
+			r = app.contextSetUser(r, data.AnonymousUser)
+			next.ServeHTTP(w, r)
+			return
+		}
+		// validate token is valid
+		authTokenParts := strings.Split(authHeader, " ")
+		if len(authTokenParts) != 2 || authTokenParts[0] != "Bearer" {
+			app.invalidAuthTokenResponse(w, r)
+			return
+		}
+		token := authTokenParts[1]
+
+		v := validator.New()
+		if data.ValidateTokenPlain(v, token); !v.Valid() { //nolint:gocritic
+			app.invalidAuthTokenResponse(w, r)
+			return
+		}
+
+		// retrieve user information, early return with invalid token if not exists.
+		u, err := app.models.Users.GetForToken(token, data.ScopeAuthentication)
+		if err != nil {
+			switch {
+			case errors.Is(err, data.ErrRecordNotFound):
+				app.invalidAuthTokenResponse(w, r)
+			default:
+				app.serverErrorResponse(w, r, err)
+			}
+			return
+		}
+
+		// set user in the context and call next handler in chain
+		r = app.contextSetUser(r, u)
+		next.ServeHTTP(w, r)
+	})
+}
+
+// reqAuthenticatedUser validate the user is authenticated
+func (app *application) reqAuthenticatedUser(next http.HandlerFunc) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		u := app.contextGetUser(r)
+		if u.IsAnonym() {
+			app.authReqResponse(w, r)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+// reqActivatedUser validate the user activated the account
+func (app *application) reqActivatedUser(next http.HandlerFunc) http.HandlerFunc {
+	fn := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		u := app.contextGetUser(r)
+		if !u.Activated {
+			app.inactiveUserResponse(w, r)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+	return app.reqAuthenticatedUser(fn)
 }

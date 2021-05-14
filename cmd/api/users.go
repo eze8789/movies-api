@@ -9,7 +9,7 @@ import (
 	"github.com/eze8789/movies-api/validator"
 )
 
-func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Request) {
+func (app *application) registerUser(w http.ResponseWriter, r *http.Request) {
 	app.logger.LogInfo(fmt.Sprintf("%s - %s: %s", r.RemoteAddr, r.Method, r.URL.String()), nil)
 	var input struct {
 		Name     string `json:"name"`
@@ -84,7 +84,7 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 	}
 }
 
-func (app *application) activateUserHandler(w http.ResponseWriter, r *http.Request) {
+func (app *application) activateUser(w http.ResponseWriter, r *http.Request) {
 	app.logger.LogInfo(fmt.Sprintf("%s - %s: %s", r.RemoteAddr, r.Method, r.URL.String()), nil)
 
 	var input struct {

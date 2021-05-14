@@ -56,7 +56,7 @@ func (app *application) createMovieHandler(w http.ResponseWriter, r *http.Reques
 	}
 }
 
-func (app *application) showMovieHandler(w http.ResponseWriter, r *http.Request) {
+func (app *application) showMovie(w http.ResponseWriter, r *http.Request) {
 	app.logger.LogInfo(fmt.Sprintf("%s - %s: %s", r.RemoteAddr, r.Method, r.URL.String()), nil)
 	id, err := app.readIDParam(r)
 	if err != nil || id < 1 {
@@ -85,7 +85,7 @@ func (app *application) showMovieHandler(w http.ResponseWriter, r *http.Request)
 	}
 }
 
-func (app *application) updateMovieHandler(w http.ResponseWriter, r *http.Request) {
+func (app *application) updateMovie(w http.ResponseWriter, r *http.Request) {
 	app.logger.LogInfo(fmt.Sprintf("%s - %s: %s", r.RemoteAddr, r.Method, r.URL.String()), nil)
 	id, err := app.readIDParam(r)
 	if err != nil || id < 1 {
@@ -159,7 +159,7 @@ func (app *application) updateMovieHandler(w http.ResponseWriter, r *http.Reques
 	}
 }
 
-func (app *application) deleteMovieHandler(w http.ResponseWriter, r *http.Request) {
+func (app *application) deleteMovie(w http.ResponseWriter, r *http.Request) {
 	app.logger.LogInfo(fmt.Sprintf("%s - %s: %s", r.RemoteAddr, r.Method, r.URL.String()), nil)
 	id, err := app.readIDParam(r)
 	if err != nil || id < 1 {
@@ -186,7 +186,7 @@ func (app *application) deleteMovieHandler(w http.ResponseWriter, r *http.Reques
 	}
 }
 
-func (app *application) listMovieHandler(w http.ResponseWriter, r *http.Request) {
+func (app *application) listMovie(w http.ResponseWriter, r *http.Request) {
 	app.logger.LogInfo(fmt.Sprintf("%s - %s: %s", r.RemoteAddr, r.Method, r.URL.String()), nil)
 	var input struct {
 		Title   string

@@ -12,21 +12,22 @@ func (app *application) routes() http.Handler {
 	rtr.NotFound = http.HandlerFunc(app.notFoundResponse)
 	rtr.MethodNotAllowed = http.HandlerFunc(app.notAllowedResponse)
 
-	rtr.HandlerFunc(http.MethodGet, "/v1/healthcheck", app.healthcheckHandler)
+	rtr.HandlerFunc(http.MethodGet, "/v1/healthcheck", app.healthcheck)
 
-	// Movies Endpoints
-	rtr.HandlerFunc(http.MethodGet, "/v1/movies", app.listMovieHandler)
-	rtr.HandlerFunc(http.MethodPost, "/v1/movies", app.createMovieHandler)
-	rtr.HandlerFunc(http.MethodGet, "/v1/movies/:id", app.showMovieHandler)
-	rtr.HandlerFunc(http.MethodPatch, "/v1/movies/:id", app.updateMovieHandler)
-	rtr.HandlerFunc(http.MethodDelete, "/v1/movies/:id", app.deleteMovieHandler)
+	// Movies Endpoints, for this access user activated and authenticated is required
+	rtr.HandlerFunc(http.MethodGet, "/v1/movies", app.reqActivatedUser(app.listMovie))
+	rtr.HandlerFunc(http.MethodPost, "/v1/movies", app.reqActivatedUser(app.createMovieHandler))
+	rtr.HandlerFunc(http.MethodGet, "/v1/movies/:id", app.reqActivatedUser(app.showMovie))
+	rtr.HandlerFunc(http.MethodPatch, "/v1/movies/:id", app.reqActivatedUser(app.updateMovie))
+	rtr.HandlerFunc(http.MethodDelete, "/v1/movies/:id", app.reqActivatedUser(app.deleteMovie))
 
 	// Users Endpoints
-	rtr.HandlerFunc(http.MethodPost, "/v1/users", app.registerUserHandler)
-	rtr.HandlerFunc(http.MethodPut, "/v1/users/activate", app.activateUserHandler)
+	rtr.HandlerFunc(http.MethodPost, "/v1/users", app.registerUser)
+	rtr.HandlerFunc(http.MethodPut, "/v1/users/activate", app.activateUser)
 
 	// Tokens Endpoints
-	rtr.HandlerFunc(http.MethodPost, "/v1/tokens/activation", app.createActivationTokenHandler)
+	rtr.HandlerFunc(http.MethodPost, "/v1/tokens/activation", app.createActivationToken)
+	rtr.HandlerFunc(http.MethodPost, "/v1/tokens/authentication", app.createAuthenticationToken)
 
-	return app.recoverPanic(app.rateLimiter(rtr))
+	return app.recoverPanic(app.rateLimiter(app.authenticate(rtr)))
 }

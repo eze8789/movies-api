@@ -12,25 +12,18 @@ import (
 )
 
 const (
-	ActivationTokenDuration = 12 * time.Hour
-	ScopeActivation         = "activation"
+	ActivationTokenDuration     = 12 * time.Hour
+	AuthenticationTokenDuration = 4 * time.Hour
+	ScopeActivation             = "activation"
+	ScopeAuthentication         = "authentication"
 )
 
-/*
-CREATE TABLE IF NOT EXISTS tokens (
-    hash bytea PRIMARY KEY,
-    user_id bigint NOT NULL REFERENCES users ON DELETE CASCADE,
-    expiry timestamp(0) with time zone NOT NULL,
-    scope text NOT NULL
-);
-*/
-
 type Token struct {
-	PlainToken  string
-	HashedToken []byte
-	UserID      int64
-	Expiry      time.Time
-	Scope       string
+	PlainToken  string    `json:"token"`
+	HashedToken []byte    `json:"-"`
+	UserID      int64     `json:"-"`
+	Expiry      time.Time `json:"expiry"`
+	Scope       string    `json:"-"`
 }
 
 type TokensModel struct {

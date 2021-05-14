@@ -60,6 +60,12 @@ func (p *password) Match(s string) (bool, error) {
 	return true, nil
 }
 
+var AnonymousUser = &User{}
+
+func (u *User) IsAnonym() bool {
+	return u == AnonymousUser
+}
+
 // ValidateEmail ensure the email is present and is a valid address
 func ValidateEmail(v *validator.Validator, email string) {
 	v.Check(email != "", "email", "must be provided")
@@ -153,7 +159,7 @@ func (um *UserModel) GetByEmail(e string) (*User, error) {
 	if err != nil {
 		switch {
 		case errors.Is(err, sql.ErrNoRows):
-			return nil, ErrDuplicatedEmail
+			return nil, ErrRecordNotFound
 		default:
 			return nil, err
 		}
