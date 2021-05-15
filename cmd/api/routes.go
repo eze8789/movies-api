@@ -15,11 +15,11 @@ func (app *application) routes() http.Handler {
 	rtr.HandlerFunc(http.MethodGet, "/v1/healthcheck", app.healthcheck)
 
 	// Movies Endpoints, for this access user activated and authenticated is required
-	rtr.HandlerFunc(http.MethodGet, "/v1/movies", app.reqActivatedUser(app.listMovie))
-	rtr.HandlerFunc(http.MethodPost, "/v1/movies", app.reqActivatedUser(app.createMovieHandler))
-	rtr.HandlerFunc(http.MethodGet, "/v1/movies/:id", app.reqActivatedUser(app.showMovie))
-	rtr.HandlerFunc(http.MethodPatch, "/v1/movies/:id", app.reqActivatedUser(app.updateMovie))
-	rtr.HandlerFunc(http.MethodDelete, "/v1/movies/:id", app.reqActivatedUser(app.deleteMovie))
+	rtr.HandlerFunc(http.MethodGet, "/v1/movies", app.reqPermission("movies:read", app.listMovie))
+	rtr.HandlerFunc(http.MethodPost, "/v1/movies", app.reqPermission("movies:write", app.createMovieHandler))
+	rtr.HandlerFunc(http.MethodGet, "/v1/movies/:id", app.reqPermission("movies:read", app.showMovie))
+	rtr.HandlerFunc(http.MethodPatch, "/v1/movies/:id", app.reqPermission("movies:write", app.updateMovie))
+	rtr.HandlerFunc(http.MethodDelete, "/v1/movies/:id", app.reqPermission("movies:write", app.deleteMovie))
 
 	// Users Endpoints
 	rtr.HandlerFunc(http.MethodPost, "/v1/users", app.registerUser)

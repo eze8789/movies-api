@@ -57,6 +57,12 @@ func (app *application) registerUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	err = app.models.Permissions.AddForUser(user.ID, "movies:read")
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
 	// generate token for email activation
 	token, err := app.models.Tokens.New(user.ID, data.ActivationTokenDuration, data.ScopeActivation)
 	if err != nil {

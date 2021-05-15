@@ -79,3 +79,8 @@ func (app *application) inactiveUserResponse(w http.ResponseWriter, r *http.Requ
 	msg := "please activate your account to access this resource"
 	app.errorResponse(w, r, http.StatusForbidden, msg)
 }
+
+func (app *application) unauthorizedResponse(w http.ResponseWriter, r *http.Request) {
+	msg := "user account not authorized to perform that operation"
+	app.errorResponse(w, r, http.StatusForbidden, msg)
+}

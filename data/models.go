@@ -14,15 +14,17 @@ var (
 )
 
 type Models struct {
-	Movies MovieModel
-	Users  UserModel
-	Tokens TokensModel
+	Movies      MovieModel
+	Users       UserModel
+	Tokens      TokensModel
+	Permissions PermissionsModel
 }
 
 func NewModels(db *sql.DB) Models {
 	return Models{
-		Movies: MovieModel{DB: db},
-		Users:  UserModel{DB: db},
-		Tokens: TokensModel{DB: db},
+		Movies:      MovieModel{DB: db},
+		Users:       UserModel{DB: db},
+		Tokens:      TokensModel{DB: db},
+		Permissions: PermissionsModel{DB: db},
 	}
 }

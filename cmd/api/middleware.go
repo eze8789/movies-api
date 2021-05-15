@@ -147,3 +147,20 @@ func (app *application) reqActivatedUser(next http.HandlerFunc) http.HandlerFunc
 	})
 	return app.reqAuthenticatedUser(fn)
 }
+
+func (app *application) reqPermission(perm string, next http.HandlerFunc) http.HandlerFunc {
+	fn := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		u := app.contextGetUser(r)
+		userPerms, err := app.models.Permissions.GetAllForUser(u.ID)
+		if err != nil {
+			app.serverErrorResponse(w, r, err)
+			return
+		}
+		if !userPerms.Include(perm) {
+			app.unauthorizedResponse(w, r)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+	return app.reqActivatedUser(fn)
+}
