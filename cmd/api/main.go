@@ -18,7 +18,11 @@ import (
 
 const (
 	webserverTimeout = 30
-	version          = "0.1"
+)
+
+var (
+	buildTime string
+	version   string
 )
 
 type config struct {
@@ -57,7 +61,14 @@ func main() {
 
 	flag.IntVar(&cfg.port, "port", 8000, "HTTP server port")
 	flag.StringVar(&cfg.env, "env", "dev", "Running environment")
+	displayVersion := flag.Bool("version", false, "Display version and exit")
 	flag.Parse()
+
+	if *displayVersion {
+		fmt.Printf("Version:\t%s\n", version)
+		fmt.Printf("Build Time:\t%s\n", buildTime)
+		os.Exit(0)
+	}
 
 	logLevel, err := GetInt("MOVIES_API_LOG_LEVEL")
 	if err != nil {
@@ -112,6 +123,8 @@ func main() {
 	defer db.Close()
 
 	logger.LogInfo("database connection established", nil)
+
+	exposeMetrics(db)
 
 	app := &application{
 		config: cfg,

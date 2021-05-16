@@ -2,15 +2,18 @@ package main
 
 import (
 	"errors"
+	"expvar"
 	"fmt"
 	"net"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/eze8789/movies-api/data"
 	"github.com/eze8789/movies-api/validator"
+	"github.com/felixge/httpsnoop"
 	"golang.org/x/time/rate"
 )
 
@@ -163,4 +166,20 @@ func (app *application) reqPermission(perm string, next http.HandlerFunc) http.H
 		next.ServeHTTP(w, r)
 	})
 	return app.reqActivatedUser(fn)
+}
+
+func (app *application) metrics(next http.Handler) http.Handler {
+	totalRequestReceived := expvar.NewInt("request_received")
+	totalResponseSent := expvar.NewInt("response_sent")
+	totalProcessingTime := expvar.NewInt("total_processing_time")
+	totalResponseByCode := expvar.NewMap("total_response_by_status_code")
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		totalRequestReceived.Add(1)
+		metrics := httpsnoop.CaptureMetrics(next, w, r)
+		totalResponseSent.Add(1)
+
+		totalProcessingTime.Add(metrics.Duration.Milliseconds())
+		totalResponseByCode.Add(strconv.Itoa(metrics.Code), 1)
+	})
 }
