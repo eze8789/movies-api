@@ -25,10 +25,12 @@ func (app *application) routes() http.Handler {
 	// Users Endpoints
 	rtr.HandlerFunc(http.MethodPost, "/v1/users", app.registerUser)
 	rtr.HandlerFunc(http.MethodPut, "/v1/users/activate", app.activateUser)
+	rtr.HandlerFunc(http.MethodPut, "/v1/users/password", app.passwordReset)
 
 	// Tokens Endpoints
 	rtr.HandlerFunc(http.MethodPost, "/v1/tokens/activation", app.createActivationToken)
 	rtr.HandlerFunc(http.MethodPost, "/v1/tokens/authentication", app.createAuthenticationToken)
+	rtr.HandlerFunc(http.MethodPost, "/v1/tokens/password-reset", app.createPasswordResetToken)
 
 	// metrics
 	rtr.Handler(http.MethodGet, "/v1/metrics", expvar.Handler())

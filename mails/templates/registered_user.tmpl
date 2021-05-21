@@ -1,7 +1,7 @@
 {{define "subject"}}Welcome to Movies API{{end}}
 
 {{define "plainBody"}} 
-Hi {{.Name}},
+Hi {{.userName}},
 
 Welcome to the Movies API.
 
@@ -24,7 +24,7 @@ Thank you for registering.
 </head>
 
 <body>
-    <p>Hi {{.Name}},</p>
+    <p>Hi {{.userName}},</p>
     <p>Welcome to the Movies API.</p>
 
     <p>For account activation please send to the endpoint: `PUT /v1/users/activated`, the following JSON payload:</p>

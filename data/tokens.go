@@ -12,10 +12,12 @@ import (
 )
 
 const (
-	ActivationTokenDuration     = 12 * time.Hour
-	AuthenticationTokenDuration = 4 * time.Hour
-	ScopeActivation             = "activation"
-	ScopeAuthentication         = "authentication"
+	ActivationTokenDuration      = 12 * time.Hour
+	AuthenticationTokenDuration  = 4 * time.Hour
+	PasswordRecoverTokenDuration = time.Hour
+	ScopeActivation              = "activation"
+	ScopeAuthentication          = "authentication"
+	ScopePasswordReset           = "password-reset"
 )
 
 type Token struct {
